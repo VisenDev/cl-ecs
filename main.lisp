@@ -4,36 +4,38 @@
 
 (defun init-sparse-set (&optional (maximum-capacity 1024))
   (make-sparse-set
-   :items (make-array maximum-capacity :fill-pointer 0)
-   :indexes (make-array maximum-capacity :fill-pointer maximum-capacity :initial-element nil)))
+   :items (make-array 8 :fill-pointer 0 :adjustable t)
+   :indexes (make-array maximum-capacity
+			:fill-pointer maximum-capacity
+			:initial-element nil
+			:adjustable t)))
 
+(declaim (ftype (function (sparse-set integer t) sparse-set) set-sparse-set))
 (defun set-sparse-set (set sparse-index value)
-  (declare (type integer sparse-index)
-	   (type sparse-set set))
+  (when (< sparse-index 0) (error "index must be above 0"))
   (symbol-macrolet
       ((indexes (sparse-set-indexes set))
-       (items (sparse-set-items set))
-       (sparse-index-reference (aref indexes sparse-index))
-       (next-dense-index (fill-pointer items))
-       (dense-index-reference (aref items sparse-index-reference))
-       )
-    (if (null sparse-index-reference)
-	(progn 
-	  (setf sparse-index-reference next-dense-index)
-	  (incf (fill-pointer (sparse-set-items set))))
-	)
-    (setf dense-index-reference value)
-    ))
+       (items (sparse-set-items set)))
+    (if (null (aref indexes sparse-index))
+      (progn 
+	(setf (aref indexes sparse-index) (fill-pointer items))
+	(vector-push value items))
+      (progn
+	(setf (aref items (aref indexes sparse-index)) value))))
+  set)
 
+(deftype ecs () '(satisfies listp))
 (defun make-ecs () (list))
 
+(declaim (ftype (function (ecs integer keyword t)) set-component))
 (defun set-component (ecs entity component-type component-value)
-  (declare (type list ecs) (type integer entity) (type symbol component-type))
-  (symbol-macrolet
-      ((ecs-field (getf ecs component-type)))
-    (if (null ecs-field)
-	(setq ecs (append ecs (list component-type (init-sparse-set)))))
-    (set-sparse-set ecs-field entity component-value))
-  ecs
+  (let ((result ecs))
+    (symbol-macrolet
+	((my-sparse-set (getf result component-type)))
+      (when (null my-sparse-set)
+	(setf result (append ecs (list component-type (init-sparse-set)))))
+      (assert (not (null my-sparse-set)))
+      (set-sparse-set my-sparse-set entity component-value))
+    result)
   )
   
