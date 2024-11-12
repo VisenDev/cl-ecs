@@ -1,4 +1,4 @@
-(load "helpers.lisp")
+;(load "helpers.lisp")
 
 (defpackage :sparse-set
   (:use :common-lisp :helpers)
@@ -6,7 +6,8 @@
    :ss-test
    :ss-set!
    :ss-unset!
-   :ss-get))
+   :ss-get
+   :make-sparse-set))
 
 (in-package :sparse-set)
 
@@ -32,21 +33,24 @@
 
 (defun ss-dense-initialize! (set)
   "initialize the dense array"
-  (assert (not (null (ss-element-type set))))
+  (assert-not-null set (ss-element-type set))
   (setf (ss-dense set) (make-dynamic-array (ss-element-type set))))
 
-(defmacro ss-ensure-dense-initialized! (set)
+(defun ss-ensure-dense-initialized! (set)
+  (assert-not-null set)
   "Checks if dense has been initialized and initialize it if necessary"
-  `(when (null (ss-dense ,set))
-     (ss-dense-initialize! ,set)))
+  (when (null (ss-dense set))
+     (ss-dense-initialize! set)))
 
-(defmacro ss-len (set)
+(defun ss-len (set)
+  (assert-not-null set)
   "Returns the length of the dense array"
-  `(fill-pointer (ss-dense ,set)))
+  (fill-pointer (ss-dense set)))
 
-(defmacro ss-top-index (set)
+(defun ss-top-index (set)
+  (assert-not-null set)
   "Returns the index of the top of the dense array"
-  `(1- (ss-len ,set)))
+  (1- (ss-len set)))
 
 (defmacro ss-top (set)
   "Returns a reference to the top element of the dense array"
@@ -58,20 +62,24 @@
 
 (defun ss-set-sparse! (set sparse-index value)
   "Sets a value in the sparse array"
+  (assert-not-null set sparse-index)
   (setf (ss-get-sparse set sparse-index) value))
 
 (defun ss-set-dense! (set sparse-index value)
   "Sets a value in the dense array"
+  (assert-not-null set sparse-index)
   (setf (ss-get-dense set sparse-index) value))
 
 (defun ss-append-dense! (set value)
   "Appends a new value to the dense array and returns its index"
+  (assert-not-null set value)
 (vector-push-extend value (ss-dense set)))
 
 
 (defun ss-set! (set sparse-index value)
   "Add a new value to the set at index"
-  (assert (not (null (ss-element-type set))))
+  (assert-not-null set sparse-index value
+		  (ss-element-type set))
   (assert (typep value (ss-element-type set)))
   (ss-ensure-dense-initialized! set)
   (if (null (ss-get-sparse set sparse-index))
@@ -105,14 +113,37 @@
 
 (defun ss-test ()
   (let ((set (make-sparse-set :element-type 'integer)))
-    (format t "~a~%" set)
+    (format t "Initial set: ~a~%" set)
+
+    (format t "Setting 3 to 1...~%")
     (ss-set! set 3 1)
-    (ss-set! set 7 4)
-    (ss-set! set 3 1)
+    (format t "set: ~a~%~%" set)
+
+    (format t "Setting 7 to 2...~%")
+    (ss-set! set 7 2)
+    (format t "set: ~a~%~%" set)
+
+    (format t "Setting 5 to 3...~%")
+    (ss-set! set 5 3)
+    (format t "set: ~a~%~%" set)
+
+    (format t "Setting 2 to 5...~%")
     (ss-set! set 2 5)
-    (format t "~a~%" set)
+    (format t "set: ~a~%~%" set)
+
+    (format t "Unsetting 3...~%")
     (ss-unset! set 3)
-    (format t "~a~%" set)))
+    (format t "~a~%" set)
+
+    (format t "Unsetting 2...~%")
+    (ss-unset! set 2)
+    (format t "~a~%" set)
+
+    (format t "Setting 3 to 1...~%")
+    (ss-set! set 3 1)
+    (format t "set: ~a~%~%" set)
+
+    ))
 
 
 ;export

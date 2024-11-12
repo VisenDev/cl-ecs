@@ -1,4 +1,3 @@
-
 (ql:quickload :closer-mop)
 
 (defpackage :helpers
@@ -7,7 +6,8 @@
    :export-defun
    :get-struct-field-names
    :unwrap-fields
-   :make-dynamic-array))
+   :make-dynamic-array
+   :assert-not-null))
 
 (in-package :helpers)
 
@@ -45,6 +45,9 @@
     :fill-pointer 0))
 
 
+(defun assert-not-null (&rest values)
+  (dolist (value values)
+    (assert (not (null value)))))
 
 ;(defun export-all-symbols (package-name)
 ;  (let ((pack (find-package package-name)))

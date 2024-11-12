@@ -1,5 +1,7 @@
-(load "helpers.lisp")
-(load "sparse-set.lisp")
+(defpackage :ecs
+  (:use :cl :helpers :sparse-set))
+
+(in-package :ecs)
 
 ;;;==============ENTITY================
 (defstruct entity-archive
@@ -46,7 +48,7 @@
     (dolist (archived entity-components)
       (symbol-macrolet ((component-storage
 			  (gethash (component-archive-id archived) database)))
-	(when (nullp component-storage)
+	(when (null component-storage)
 	  (setf component-storage (list))))
     ;todo: finish code
       )))
