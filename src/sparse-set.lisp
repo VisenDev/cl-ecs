@@ -12,17 +12,27 @@
 
 (in-package :sparse-set)
 
-(defconstant +ss-default-capacity+ 8)
 (defstruct (sparse-set
-  (:conc-name ss-))
-  (dense-to-sparse (make-hash-table))
-  element-type
-  (dense nil)
-  (sparse
-   (make-array +ss-default-capacity+ 
-    :fill-pointer +ss-default-capacity+ 
-    :initial-element nil
-    :adjustable t)))
+	    (:conc-name ss-)
+	    (:constructor make-sparse-set-base) )
+  (dense-to-sparse nil :type hash-table)
+  (element-type nil :read-only t :type symbol)
+  (dense nil :type vector)
+  (sparse nil :type vector))
+
+(defun make-sparse-set (element-type)
+  "Constructor for sparse-set"
+  (let ((default-capacity 16))
+    (make-sparse-set-base
+     :dense-to-sparse (make-hash-table)
+     :element-type element-type
+     :dense (make-dynamic-array element-type)
+     :sparse
+     (make-array
+      default-capacity
+      :fill-pointer 0
+      :initial-element nil
+      :adjustable t))))
 
 (typed-defun :vector ss-not-nil-sparse (:sparse-set set)
   "Returns a list of all non-nil values in the sparse array"
@@ -38,14 +48,14 @@
 
   ;Assert there are the same number of dense indexes as non-nil sparse indexes
   (let
-      ((num-sparse-entries (length (ss-non-nil-sparse set)))
+      ((num-sparse-entries (length (ss-not-nil-sparse set)))
        (num-dense-entries (fill-pointer (ss-dense set))))
     (assert (equalp num-sparse-entries num-dense-entries)))
 
   ;;;Assert all sparse indexes point to a valid and unique dense index
   (let
       ((unique-items (list)))
-  (loop for item across (the vector (ss-non-nil-sparse set)) do
+  (loop for item across (the vector (ss-not-nil-sparse set)) do
     (assert (not (member item unique-items))) ;ensure uniqueness
     (assert (>= item 0 )) ;assert gte than 0
     (assert (< item (fill-pointer (ss-dense set)))) ;assert less than length of dense array
@@ -63,11 +73,6 @@
 (typed-defun :t ss-dense-initialize! (:sparse-set set)
   (assert-not-null (ss-element-type set))
   (setf (ss-dense set) (make-dynamic-array (ss-element-type set))))
-
-(typed-defun :t ss-ensure-dense-initialized! (:sparse-set set)
-  "Checks if dense has been initialized and initialize it if necessary"
-  (when (null (ss-dense set))
-     (ss-dense-initialize! set)))
 
 (typed-defun :integer ss-len (:sparse-set set)
   "Returns the length of the dense array"
@@ -106,7 +111,6 @@
   (assert-not-null sparse-index value
 		  (ss-element-type set))
   (assert (typep value (ss-element-type set)))
-  (ss-ensure-dense-initialized! set)
   (if (null (ss-get-sparse set sparse-index))
       (let ((dense-index (ss-append-dense! set value)))
 	(ss-set-sparse! set sparse-index dense-index) ;set sparse
@@ -138,7 +142,7 @@
 
 
 (defun ss-test ()
-  (let ((set (make-sparse-set :element-type 'integer)))
+  (let ((set (make-sparse-set 'integer)))
 
     (format t "Initial set: ~a~%" set)
 
