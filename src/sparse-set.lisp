@@ -1,14 +1,15 @@
 ;(load "helpers.lisp")
 
 (defpackage :sparse-set
-  (:use :common-lisp :helpers)
+  (:use #:common-lisp #:helpers)
   (:export
-   :ss-test
-   :ss-set!
-   :ss-unset!
-   :ss-get
-   :ss-not-nil-sparse
-   :make-sparse-set))
+   #:ss-test
+   #:ss-set!
+   #:ss-unset!
+   #:ss-get
+   #:ss-not-nil-sparse
+   #:sparse-set
+   #:make-sparse-set))
 
 (in-package :sparse-set)
 

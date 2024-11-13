@@ -5,17 +5,18 @@
 
 ;;;==============ENTITY================
 (defstruct entity-archive
+  "An entity and its components, used for transfering entities between archetypes"
   (id nil :type integer)
   (components nil :type list))
   
 
 ;;;==============COMPONENTS==============
-(defmacro make-component-array (type)
-  `(make-dynamic-array ,type))
+(defun make-component-array (type)
+  (make-dynamic-array type))
   
 (deftype component-id () 'string)
-(defmacro make-component-id-array ()
-  `(make-dynamic-array 'component-id))
+(defun make-component-id-array ()
+  (make-dynamic-array 'component-id))
 
 (defstruct component-archive
   (id nil :type string)
@@ -28,9 +29,9 @@
 ;;;================ARCHETYPES================
 (defstruct archetype
   "an archetype refers to a specific set of shared components"
-  component-ids ;list of ids of components
-  id ;string name of archetype
-  (database (make-hash-table));database of component values for stored entities
+  (component-ids nil :type list) ;list of ids of components
+  (id nil :type string) ;string name of archetype
+  (database (make-hash-table) :type hash-table);database of component values for stored entities
   (entity-id-to-index (make-sparse-set :element-type 'integer))) 
 
 
