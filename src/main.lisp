@@ -1,5 +1,5 @@
 ;(setq *block-compile-default* t)
-(load "helpers.lisp")
+;(load "helpers.lisp")
 
 
 (defconstant +default-capacity+ 32)

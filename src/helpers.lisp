@@ -91,8 +91,23 @@
   (format t "~a~%" value2)
   nil)
 
-(mynewfun "hi" (the integer 1))
+;(mynewfun "hi" (the integer 1))
 
+(defmacro constlet (form &body body)
+  (let
+      ((form-name (first form))
+       (form-value (second form))
+       (gensym-name (gensym)))
+    `(progn
+       (defconstant ,gensym-name ,form-value)
+       (symbol-macrolet
+           ((,form-name ,gensym-name))
+         ,@body))))
+
+(constlet (mylist (list 1 2 3 4 5))
+  (write mylist)
+  ;(push 4 mylist)
+  (write mylist))
 
 
 

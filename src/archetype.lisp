@@ -27,19 +27,27 @@
 
 
 ;;;================ARCHETYPES================
-(defstruct archetype
+(defstruct (archetype (:constructor make-archetype-base))
   "an archetype refers to a specific set of shared components"
   (component-ids nil :type list) ;list of ids of components
   (id nil :type string) ;string name of archetype
-  (database (make-hash-table) :type hash-table);database of component values for stored entities
-  (entity-id-to-index (make-sparse-set :element-type 'integer))) 
+  (database nil :type hash-table);database of component values for stored entities
+  (entity-id-to-index nil :type sparse-set)) 
+
+(defun make-archetype (component-id-list)
+  "Archetype constructor"
+  (make-archetype-base
+   :component-ids component-id-list
+   :id (get-archetype-id component-id-list)
+   :database (make-hash-table)
+   :entity-id-to-index (make-sparse-set 'integer)))
 
 
-(defun get-archetype-id (archetype-component-ids)
+(defun get-archetype-id (component-id-list)
   "Get the id of an archetype given a list of its components"
   (reduce
    (lambda (a b) (concatenate 'string a "-" b))
-   (sort (copy-seq archetype-component-ids) #'string-lessp)))
+   (sort (copy-seq component-id-list) #'string-lessp)))
 
 (defun move-entity-to-archetype (archetype entity-id entity-components)
     (assert (equalp
