@@ -3,7 +3,7 @@
 (defpackage :sparse-set
   (:use #:common-lisp)
   (:local-nicknames
-   (:h :helpers))
+   (#:tu #:type-utils))
   (:export
    #:test
    #:set!
@@ -15,6 +15,7 @@
 
 (in-package :sparse-set)
 
+(declaim (inline make-sparse-set make-sparse-set-base))
 (defstruct (sparse-set
 	    (:conc-name ss-)
 	    (:constructor make-sparse-set-base) )
@@ -29,7 +30,7 @@
     (make-sparse-set-base
      :dense-to-sparse (make-hash-table)
      :element-type element-type
-     :dense (h:make-dynamic-array element-type)
+     :dense (tu:make-dynamic-array element-type)
      :sparse
      (make-array
       default-capacity
@@ -37,17 +38,17 @@
       :initial-element nil
       :adjustable t))))
 
-(h:typed-defun :vector not-nil-sparse (:sparse-set set)
+(tu:typed-defun :vector not-nil-sparse (:sparse-set set)
   "Returns a list of all non-nil values in the sparse array"
   (remove-if #'null (ss-sparse set)))
 
-(h:typed-defun :t audit (:sparse-set set)
+(tu:typed-defun :t audit (:sparse-set set)
   "audit the sparse set to ensure state is valid"
   
   (declare (optimize (safety 3)))
 
   ;;Assert sparse-set fields are defined
-  (h:assert-not-null (ss-sparse set) (ss-dense set) (ss-element-type set) (ss-dense-to-sparse set))
+  (tu:assert-not-null (ss-sparse set) (ss-dense set) (ss-element-type set) (ss-dense-to-sparse set))
 
   ;Assert there are the same number of dense indexes as non-nil sparse indexes
   (let
@@ -73,15 +74,15 @@
   "Returns a reference to the value in the dense array"
   `(aref (ss-dense ,set) (get-sparse ,set ,sparse-index)))
 
-(h:typed-defun :t dense-initialize! (:sparse-set set)
-  (h:assert-not-null (ss-element-type set))
-  (setf (ss-dense set) (h:make-dynamic-array (ss-element-type set))))
+(tu:typed-defun :t dense-initialize! (:sparse-set set)
+  (tu:assert-not-null (ss-element-type set))
+  (setf (ss-dense set) (tu:make-dynamic-array (ss-element-type set))))
 
-(h:typed-defun :integer len (:sparse-set set)
+(tu:typed-defun :integer len (:sparse-set set)
   "Returns the length of the dense array"
   (fill-pointer (ss-dense set)))
 
-(h:typed-defun :integer top-index (:sparse-set set)
+(tu:typed-defun :integer top-index (:sparse-set set)
   "Returns the index of the top of the dense array"
   (1- (len set)))
 
@@ -93,25 +94,25 @@
   "returns the sparse index pointing to a given dense index"
     `(gethash ,dense-index (ss-dense-to-sparse ,set)))
 
-(h:typed-defun :t set-sparse!
+(tu:typed-defun :t set-sparse!
     (:sparse-set set :integer sparse-index :t value)
   "Sets a value in the sparse array"
   (setf (get-sparse set sparse-index) value))
 
-(h:typed-defun :t set-dense!
+(tu:typed-defun :t set-dense!
     (:sparse-set set :integer sparse-index :t value)
   "Sets a value in the dense array"
   (setf (get-dense set sparse-index) value))
 
-(h:typed-defun :t append-dense! (:sparse-set set :t value)
+(tu:typed-defun :t append-dense! (:sparse-set set :t value)
   "Appends a new value to the dense array and returns its index"
-  (h:assert-not-null value)
+  (tu:assert-not-null value)
 (vector-push-extend value (ss-dense set)))
 
 
-(h:typed-defun :t set! (:sparse-set set :integer sparse-index :t value)
+(tu:typed-defun :t set! (:sparse-set set :integer sparse-index :t value)
   "Add a new value to the set at index"
-  (h:assert-not-null sparse-index value
+  (tu:assert-not-null sparse-index value
 		  (ss-element-type set))
   (assert (typep value (ss-element-type set)))
   (if (null (get-sparse set sparse-index))
@@ -123,7 +124,7 @@
 	)
       (set-dense! set sparse-index value)))
 
-(h:typed-defun :t unset! (:sparse-set set :integer unset-sparse-index)
+(tu:typed-defun :t unset! (:sparse-set set :integer unset-sparse-index)
   "Unset the value at index"
   (let
       ((unset-dense-index (get-sparse set unset-sparse-index))
